@@ -1,0 +1,35 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_16.2.app
+
+      - name: Build app (unsigned)
+        run: |
+          xcodebuild -scheme TelegramApp -configuration Release \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO \
+            SYMROOT=build build
+
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Release-iphoneos/TelegramApp.app Payload/
+          zip -r TelegramApp.ipa Payload/
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: TelegramApp
+          path: TelegramApp.ipa
